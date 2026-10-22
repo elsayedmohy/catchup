@@ -1,0 +1,12 @@
+{
+  "name": "@catchup/tooling",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared lint/format/TypeScript configuration for Catchup apps.",
+  "exports": {
+    "./eslint": "./eslint.config.js",
+    "./prettier": "./prettier.config.js",
+    "./tsconfig/base": "./tsconfig.base.json"
+  }
+}

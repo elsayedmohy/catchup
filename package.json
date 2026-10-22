@@ -1,0 +1,35 @@
+{
+  "name": "catchup",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/web",
+    "apps/mobile",
+    "apps/share-poc",
+    "packages/*"
+  ],
+  "scripts": {
+    "db:start": "bash scripts/dev-db.sh start",
+    "db:stop": "bash scripts/dev-db.sh stop",
+    "db:status": "bash scripts/dev-db.sh status",
+    "db:reset": "bash scripts/dev-db.sh reset",
+    "api:dev": "cd apps/api && dotnet run --urls http://localhost:5099",
+    "api:test": "cd apps/api/tests && dotnet test",
+    "api:smoke": "bash scripts/api-smoke-test.sh",
+    "contracts:build": "npm run build --workspace @catchup/contracts",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

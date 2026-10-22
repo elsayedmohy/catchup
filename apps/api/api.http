@@ -1,0 +1,69 @@
+@baseUrl = http://localhost:5099
+
+### Register
+# @name register
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "you@example.com",
+  "password": "SecurePass123!"
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "you@example.com",
+  "password": "SecurePass123!"
+}
+
+### Current user
+@token = {{register.response.body.accessToken}}
+GET {{baseUrl}}/api/user/me
+Authorization: Bearer {{token}}
+
+### Save an item
+# @name createItem
+POST {{baseUrl}}/api/items
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "originalUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ&utm_source=share"
+}
+
+### List inbox
+GET {{baseUrl}}/api/items?limit=20
+Authorization: Bearer {{token}}
+
+### Search
+GET {{baseUrl}}/api/items?q=youtube
+Authorization: Bearer {{token}}
+
+### Filter by source
+GET {{baseUrl}}/api/items?source=YouTube
+Authorization: Bearer {{token}}
+
+### Archive an item
+@itemId = {{createItem.response.body.id}}
+PUT {{baseUrl}}/api/items/{{itemId}}/archive
+Authorization: Bearer {{token}}
+
+### List archive
+GET {{baseUrl}}/api/items?archived=true
+Authorization: Bearer {{token}}
+
+### Restore an item
+PUT {{baseUrl}}/api/items/{{itemId}}/restore
+Authorization: Bearer {{token}}
+
+### Delete an item
+DELETE {{baseUrl}}/api/items/{{itemId}}
+Authorization: Bearer {{token}}
+
+### Delete account (cascades items, revokes tokens)
+DELETE {{baseUrl}}/api/user/me
+Authorization: Bearer {{token}}
