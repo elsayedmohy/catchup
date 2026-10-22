@@ -222,6 +222,16 @@ adb shell "am start -n com.catchup.app/.MainActivity \
 adb shell cmd package query-activities -a android.intent.action.SEND -t text/plain | grep -A3 catchup
 ```
 
+`scripts/android-share-test.sh` wraps the intent command (including the quoting
+above) and can print the resulting API items:
+
+```bash
+CATCHUP_TOKEN=$(cat token) scripts/android-share-test.sh --cold 'Cold https://example.com/a ok'
+CATCHUP_TOKEN=$(cat token) scripts/android-share-test.sh 'https://example.com/b'
+```
+
+Both modes were run against the emulator and saved the expected URLs.
+
 ## Next step
 
 Configure EAS (`eas init`, credentials, one iOS extension target) and run the

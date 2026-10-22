@@ -182,20 +182,21 @@ Copy `.env.example` to `.env` and adjust. Key values:
 
 ## Scripts
 
-| Command                   | What it does                                     |
-| ------------------------- | ------------------------------------------------ |
-| `npm run db:start`        | Start the local PostgreSQL cluster on 5433       |
-| `npm run api:dev`         | Run the API on http://localhost:5099             |
-| `npm run api:test`        | Run the .NET test suite                          |
-| `npm run api:smoke`       | Run HTTP smoke tests against a running API       |
-| `npm run web:dev`         | Run the Next.js web app on http://localhost:3000 |
-| `npm run web:build`       | Production build of the web app                  |
-| `npm run mobile:prebuild` | Generate native Android/iOS projects             |
-| `npm run mobile:android`  | Build and install the Android dev build          |
-| `npm run mobile:start`    | Start Metro for the mobile dev build             |
-| `npm run contracts:build` | Build the shared TypeScript contracts            |
-| `npm run lint`            | Lint the workspace                               |
-| `npm run format`          | Format with Prettier                             |
+| Command                         | What it does                                     |
+| ------------------------------- | ------------------------------------------------ |
+| `npm run db:start`              | Start the local PostgreSQL cluster on 5433       |
+| `npm run api:dev`               | Run the API on http://localhost:5099             |
+| `npm run api:test`              | Run the .NET test suite                          |
+| `npm run api:smoke`             | Run HTTP smoke tests against a running API       |
+| `npm run web:dev`               | Run the Next.js web app on http://localhost:3000 |
+| `npm run web:build`             | Production build of the web app                  |
+| `npm run mobile:prebuild`       | Generate native Android/iOS projects             |
+| `npm run mobile:android`        | Build and install the Android dev build          |
+| `npm run mobile:start`          | Start Metro for the mobile dev build             |
+| `scripts/android-share-test.sh` | Send a test share to Catchup on a device         |
+| `npm run contracts:build`       | Build the shared TypeScript contracts            |
+| `npm run lint`                  | Lint the workspace                               |
+| `npm run format`                | Format with Prettier                             |
 
 ## Documentation
 
