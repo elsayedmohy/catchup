@@ -109,7 +109,9 @@ export function ItemsScreen({ archived }: { archived: boolean }) {
         <Text style={{ color: colors.textMuted }}>
           {archived
             ? 'Items you set aside. Restore them to your inbox anytime.'
-            : 'Everything you saved, newest first.'}
+            : list.sort === 'desc'
+              ? 'Everything you saved, newest first.'
+              : 'Everything you saved, oldest first.'}
         </Text>
 
         {saveOpen ? (

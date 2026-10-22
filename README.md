@@ -10,6 +10,16 @@ A unified personal library for links and content saved from across social media,
 - **Cross-Device Sync** - Access your library on web and mobile
 - **Archive & Organize** - Keep your inbox clean
 
+## Status
+
+The MVP is implemented. The API has 82 passing tests and 33 live smoke checks; the
+web app is built and was exercised end-to-end in a browser; the Android app was
+run on an Android 15 emulator, including the real system share sheet, a Chrome
+share, cold/warm starts, and the signed-out queue. iOS is implemented but has not
+been built or run because it needs an Apple Developer team. Details and remaining
+gaps: [final summary](./docs/summaries/final-summary.md) and
+[mobile report](./docs/summaries/phase6-mobile-report.md).
+
 ## Tech Stack
 
 - **Web:** Next.js 16 (App Router), React 19, TypeScript
@@ -124,9 +134,41 @@ EXPO_PUBLIC_API_BASE_URL=http://<your-LAN-IP>:5099 npm run mobile:start
 The Android emulator must be able to reach the API; bind the API to `0.0.0.0`
 or use `adb reverse tcp:5099 tcp:5099` with `http://localhost:5099`.
 
-iOS builds require an Apple Developer team for the app **and** the Share
-Extension. Without a Mac, use EAS Build; `DEVELOPMENT_TEAM` still has to be set
-for signing.
+### HTTP, release builds, and EAS
+
+Android release builds reject cleartext HTTP by default — that is intentional. Use
+a **development build** (its debug manifest allows cleartext) with the local HTTP
+API. With `adb reverse`, Metro and the API can both use loopback:
+
+```bash
+adb reverse tcp:8081 tcp:8081
+adb reverse tcp:5099 tcp:5099
+EXPO_PUBLIC_API_BASE_URL=http://localhost:5099 npm run mobile:start
+```
+
+For a self-contained test APK without Metro:
+
+```bash
+cd apps/mobile/android
+JAVA_HOME=/path/to/jdk21 ./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+Point production builds at an HTTPS API; never enable `usesCleartextTraffic` for
+production. Cloud builds use [`apps/mobile/eas.json`](./apps/mobile/eas.json):
+
+```bash
+cd apps/mobile
+npx eas-cli init                 # writes extra.eas.projectId
+npx eas-cli build --platform android --profile preview
+npx eas-cli build --platform ios --profile preview
+```
+
+Replace the placeholder API URL in `eas.json` (or supply it through EAS
+environment variables) first. iOS requires an Apple Developer team for the app
+**and** the Share Extension, with the App Group `group.com.catchup.app` enabled on
+both App IDs. Without a Mac, EAS Build is the only path. See
+[Deployment](./docs/deployment.md).
 
 ### Configuration
 
@@ -166,6 +208,11 @@ See the [docs](./docs/) folder for detailed documentation:
 - [Share Integration Spike](./docs/share-integration-spike.md)
 - [Implementation Roadmap](./docs/implementation-roadmap.md)
 - [Testing Strategy](./docs/testing-strategy.md)
+- [Deployment](./docs/deployment.md)
+- [Final Summary](./docs/summaries/final-summary.md)
+- [Backend Report](./docs/summaries/phase4-backend-report.md)
+- [Web Report](./docs/summaries/phase5-web-report.md)
+- [Mobile Report](./docs/summaries/phase6-mobile-report.md)
 
 ## License
 

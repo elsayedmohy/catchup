@@ -1,7 +1,9 @@
 # Phase 6 — Mobile App Report
 
-Status: **implemented, type-checked, linted, and bundled for both platforms.**
-**Not run on a physical device or emulator** (see “What was not verified”).
+Status: **implemented and verified at runtime on an Android 15 emulator**, including
+the real Android share sheet, a Chrome share, cold and warm starts, the signed-out
+queue, search/filter/sort, quick save, and item archive/restore/delete. iOS is
+still blocked on Apple Developer credentials.
 
 ## What was built
 
@@ -83,90 +85,146 @@ means deleted accounts and changed credentials invalidate tokens immediately).
   feedback — not as a general navigation pattern.
 - Missing preview images fall back to a two-letter source tile.
 
-## What was verified
+## Runtime verification (Android 15 emulator)
 
-Run and observed:
+Environment:
 
-```
-npm install --legacy-peer-deps                  -> resolves SDK 54 versions
-npx tsc --noEmit (apps/mobile)                  -> clean
-npx eslint .                                    -> clean (whole repo)
-npx expo prebuild --platform android --clean    -> finished
-npx expo prebuild --platform ios --clean        -> finished
-npx expo export --platform android              -> Hermes bundle, 3.18 MB
-npx expo export --platform ios                  -> Hermes bundle, 3.18 MB
-```
+- AVD `Catchup_API35`, Android 15 (API 35), `sdk_gphone64_x86_64`, 3072 MB RAM.
+- Emulator **35.6.11** (`build_id 13610412`) started with `-gpu host`. The
+  originally installed 37.2.12 build segfaulted in bundled SwiftShader
+  (`libGLESv2.so`) on this Fedora/Wayland host in every GPU and acceleration
+  combination; see “Environment notes” below.
+- API `http://localhost:5099`, reached from the emulator via `adb reverse
+tcp:5099 tcp:5099` (the debug bundle used `http://localhost:5099`).
 
-Generated native output was inspected:
+Checks performed and observed:
 
-- `android/app/src/main/AndroidManifest.xml`: `MainActivity` has
-  `android:launchMode="singleTask"` and a `SEND` intent filter for `text/*`.
-- `ios/ShareExtension/`: `ShareViewController.swift`, storyboard, privacy manifest,
-  `ShareExtensionPreprocessor.js`.
-- `ios/Catchup/Catchup.entitlements` **and**
-  `ios/ShareExtension/ShareExtension.entitlements` both contain
-  `group.com.catchup.app`.
-- `ShareExtension-Info.plist` activation rule accepts one web URL, one web page,
-  and text.
-- Prebuild reports `No DEVELOPMENT_TEAM found…`, confirming the signing blocker
-  rather than hiding it.
+| Check                                                 | Result                                                                             |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `cmd package query-activities -a …SEND -t text/plain` | `com.catchup.app/.MainActivity` is registered with `launchMode=singleTask`.        |
+| System share sheet (implicit `ACTION_SEND`)           | Catchup appears as a target; choosing it saves the link.                           |
+| Share from Chrome (`example.com/chrome-share`)        | Saved; app foregrounded with the “Saved” confirmation.                             |
+| Cold start (app force-stopped, explicit intent)       | Saved; item visible via the API immediately.                                       |
+| Warm start (app already foregrounded)                 | `onNewIntent` is handled; saved.                                                   |
+| Shared text containing a URL                          | URL extracted from the sentence and saved.                                         |
+| Shared text with no URL                               | “No link found”; no item created.                                                  |
+| Shortened URL (`https://bit.ly/3Q8kJ2m`)              | Saved; metadata fetch failure is non-fatal (`metadataStatus: Failed`).             |
+| Metadata extraction                                   | `https://example.com/` → title “Example Domain”, `metadataStatus: Success`.        |
+| Signed out, then share                                | “Sign in to save” alert; after login the pending link is saved automatically.      |
+| Search (`text-around`)                                | One matching result; stale responses guarded.                                      |
+| Source filter (Instagram on empty data)               | Empty state, no error.                                                             |
+| Sort newest/oldest                                    | Order flips; oldest item (first ever share) is first after toggling.               |
+| Quick save (`+ Link`)                                 | Saves from the inline row, refreshes the list, closes the form.                    |
+| Item detail                                           | Shows source, original link, saved date, preview fallback.                         |
+| Archive → API                                         | `GET /api/items?archived=true` returns the item; detail shows the “Archived” chip. |
+| Restore                                               | Archived list becomes empty again.                                                 |
+| Delete                                                | Confirmation alert; item disappears from the list and from the API.                |
 
-The Metro export is meaningful: it resolves every import (including the workspace
-`@catchup/contracts` types and `expo-share-intent`) and compiles the whole app for
-both platforms. It does **not** prove runtime behaviour.
+Bug found and fixed during the run: the inbox subtitle was hard-coded to “newest
+first” even when sorting oldest first. It now reflects `list.sort`
+(`apps/mobile/src/components/ItemsScreen.tsx`), re-verified on the emulator.
 
 ## What was not verified
 
 These are not done yet and must not be claimed as working:
 
-1. **No launch on a device or emulator.** The Android AVD `Pixel_8` exists, but a
-   headless emulator launch previously segfaulted; `adb` is installed at
-   `/home/sayed/Android/Sdk/platform-tools/adb` (not on `PATH`).
-2. **No share-sheet acceptance run** from Chrome, Instagram, TikTok, Facebook,
-   WhatsApp, or any other app; no cold-start vs. backgrounded comparison.
-3. **No iOS device run.** Requires an Apple Developer team, provisioning for the
-   app and the extension, and `DEVELOPMENT_TEAM`; no Mac is available, so this
-   must go through EAS Build.
-4. **No runtime UI review**: navigation transitions, keyboard avoidance, safe
-   areas, alerts, SecureStore, and theme switching were not observed on a device.
-5. **No mobile automated tests** (unit or E2E).
+1. **No physical Android device run.** All runtime evidence above is from the
+   emulator. A release APK installs but cannot call a plain-HTTP API (see below).
+2. **No shares from Instagram, TikTok, Facebook, or WhatsApp.** Those apps are not
+   installed in the `google_apis` emulator image. The system share sheet, Chrome,
+   and explicit intents all exercise the same `ACTION_SEND` path, so filter
+   registration is proven; per-app UI differences are not.
+3. **No iOS device run and no EAS cloud build yet.** Requires an Apple Developer
+   team, provisioning for the app and the Share Extension, and `DEVELOPMENT_TEAM`;
+   no Mac is available, so EAS Build is the only path.
+4. **No mobile automated tests** (unit or E2E).
+5. **Not observed:** keyboard-avoidance edge cases, safe-area behaviour on notched
+   hardware, rotation, and accessibility services.
 
 ## Known limitations
 
-1. **Token expiry.** The API issues a 60-minute access token with no refresh
+1. **Release builds block cleartext HTTP.** The release manifest has no
+   `usesCleartextTraffic`; Android rejects `http://` calls, so the release APK
+   showed “Could not reach the server” against the dev API. This is correct for
+   production (use HTTPS). For local device testing use `assembleDebug` (its
+   manifest allows cleartext) plus Metro, or add a dev-only network-security
+   config. Do **not** ship `usesCleartextTraffic=true`.
+2. **Token expiry.** The API issues a 60-minute access token with no refresh
    token, so the app signs the user out after an hour.
-2. **Text/URL shares only.** `androidIntentFilters` is `text/*` and the iOS rule
+3. **Text/URL shares only.** `androidIntentFilters` is `text/*` and the iOS rule
    accepts web URLs/pages/text. Shared images and files are out of scope.
-3. **No offline cache.** The list shows an error with Retry when the API is
+4. **No offline cache.** The list shows an error with Retry when the API is
    unreachable; previously loaded items are not persisted.
-4. **Regex URL extraction.** Explicit `webUrl` values are preferred; text fallback
+5. **Regex URL extraction.** Explicit `webUrl` values are preferred; text fallback
    takes the first `http(s)` token and can include trailing punctuation.
-5. **No EAS configuration yet.** `eas.json`, a `projectId`, and credentials still
-   need to be created for cloud iOS builds.
-6. **Legal links are conditional.** They appear only when `EXPO_PUBLIC_WEB_URL` is
+6. **EAS credentials are not configured.** `eas.json` is present, but there is no
+   `projectId` or Apple team until `eas init`/`eas credentials` are run with an
+   account.
+7. **Legal links are conditional.** They appear only when `EXPO_PUBLIC_WEB_URL` is
    set, since there is no deployed web URL yet.
+8. **Dev warning banner.** Expo’s LogBox banner appeared once during the run
+   (“Open debugger to view warnings”), but the warning did not appear in Metro
+   output or `adb logcat -s ReactNativeJS` and was not reproducible. Development
+   only; not observed in a release build.
 
-## How to run
+## Environment notes (emulator on this host)
+
+- The SDK’s **emulator 37.2.12** crashes with `SIGSEGV` in bundled SwiftShader
+  (`libGLESv2.so`) on Fedora 44/Wayland, with or without KVM and with every
+  `-gpu` mode. Coredump backtraces confirmed the GL thread.
+- Workaround used: install **emulator 35.6.11** and run with `-gpu host`:
+
+  ```bash
+  $ANDROID_HOME/emulator/emulator -avd Catchup_API35 \
+    -no-window -no-audio -no-boot-anim -gpu host -no-snapshot -no-metrics
+  ```
+
+  With KVM this boots Android 15 in about 21 seconds.
+
+- Because the emulator’s `10.0.2.2` route to a loopback-bound API was unreliable
+  here, the device tests used `adb reverse tcp:5099 tcp:5099` with a bundle built
+  for `http://localhost:5099`.
+
+## How to run (local device testing)
+
+The debug build is the one that can reach the HTTP dev API:
 
 ```bash
+# 1. API and web
 npm run db:start
-npm run api:dev                       # bind to 0.0.0.0 if a phone must reach it
+npm run api:dev
 
-# terminal 2
-EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5099 npm run mobile:android
-# or, for an already-installed dev build:
-EXPO_PUBLIC_API_BASE_URL=http://<LAN-IP>:5099 npm run mobile:start
+# 2. Debug APK
+cd apps/mobile/android
+JAVA_HOME=/path/to/jdk21 ./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+
+# 3. Ports: Metro + API
+adb reverse tcp:8081 tcp:8081
+adb reverse tcp:5099 tcp:5099
+
+# 4. Metro with the API URL baked into the JS bundle
+cd ../..
+EXPO_PUBLIC_API_BASE_URL=http://localhost:5099 npx expo start --port 8081
 ```
 
-Common API addressing mistakes:
+For a release APK, point `EXPO_PUBLIC_API_BASE_URL` at an HTTPS API.
 
-- `localhost` inside an Android emulator points at the emulator, not the host —
-  use `10.0.2.2`, or `adb reverse tcp:5099 tcp:5099`.
-- A physical device needs the host’s LAN IP and an API bound to `0.0.0.0`
-  (plus a firewall allowance).
+Sentinel commands used for share testing (note the quoting: the whole `am`
+command must be one shell argument or spaces truncate `EXTRA_TEXT`):
+
+```bash
+adb shell "am start -n com.catchup.app/.MainActivity \
+  -a android.intent.action.SEND -t text/plain \
+  --es android.intent.extra.TEXT 'Look at https://example.com/page and more'"
+
+# Prove the filter without launching the app:
+adb shell cmd package query-activities -a android.intent.action.SEND -t text/plain | grep -A3 catchup
+```
 
 ## Next step
 
-Run the share acceptance list in `docs/share-poc-testing.md` on the Android
-emulator/device, then configure EAS for iOS and document the Apple Developer
-blocker precisely.
+Configure EAS (`eas init`, credentials, one iOS extension target) and run the
+share acceptance list on a physical iPhone once an Apple Developer team is
+available. On Android, repeat the same checklist on a physical device and, if
+possible, from Instagram/TikTok/WhatsApp.
