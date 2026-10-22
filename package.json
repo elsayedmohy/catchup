@@ -18,6 +18,11 @@
     "api:test": "cd apps/api/tests && dotnet test",
     "api:smoke": "bash scripts/api-smoke-test.sh",
     "contracts:build": "npm run build --workspace @catchup/contracts",
+    "web:dev": "npm run dev --workspace @catchup/web",
+    "web:build": "npm run build --workspace @catchup/web",
+    "web:start": "npm run start --workspace @catchup/web",
+    "web:lint": "npm run lint --workspace @catchup/web",
+    "web:typecheck": "npm run typecheck --workspace @catchup/web",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."

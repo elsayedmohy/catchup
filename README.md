@@ -70,8 +70,20 @@ dotnet ef database update      # requires: dotnet tool install --global dotnet-e
 
 ### 4. Verify the API
 ```bash
-npm run api:test     # 80 unit + integration tests (uses `catchup_test` DB)
+npm run api:test     # 82 unit + integration tests (uses `catchup_test` DB)
 npm run api:smoke    # end-to-end HTTP checks against a running API
+```
+
+### 5. Run the web app
+```bash
+npm run web:dev      # http://localhost:3000 (expects the API on :5099)
+```
+The web app talks to the API **server-side only**: the access token lives in an
+HttpOnly cookie, so no token is exposed to browser JavaScript. Set `API_BASE_URL`
+if the API is not on `http://localhost:5099`.
+
+```bash
+npm run web:build && npm run web:start
 ```
 
 ### Configuration
@@ -87,6 +99,8 @@ Copy `.env.example` to `.env` and adjust. Key values:
 | `npm run api:dev` | Run the API on http://localhost:5099 |
 | `npm run api:test` | Run the .NET test suite |
 | `npm run api:smoke` | Run HTTP smoke tests against a running API |
+| `npm run web:dev` | Run the Next.js web app on http://localhost:3000 |
+| `npm run web:build` | Production build of the web app |
 | `npm run contracts:build` | Build the shared TypeScript contracts |
 | `npm run lint` | Lint the workspace |
 | `npm run format` | Format with Prettier |
