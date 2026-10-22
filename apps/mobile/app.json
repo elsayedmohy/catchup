@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Catchup",
+    "slug": "catchup",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "catchup",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.catchup.app"
+    },
+    "android": {
+      "package": "com.catchup.app",
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-share-intent",
+        {
+          "iosShareExtensionName": "ShareExtension",
+          "iosAppGroupIdentifier": "group.com.catchup.app",
+          "iosShareExtensionBundleIdentifier": "com.catchup.app.ShareExtension",
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
+            "NSExtensionActivationSupportsText": true
+          },
+          "androidIntentFilters": ["text/*"]
+        }
+      ]
+    ]
+  }
+}

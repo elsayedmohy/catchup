@@ -3,6 +3,7 @@
 A unified personal library for links and content saved from across social media, browsers, and other apps via native share sheets.
 
 ## Features
+
 - **Native Share Integration** - Save content directly from any app via iOS Share Extension or Android share menu
 - **Unified Inbox** - All your saved links in one place, accessible from any device
 - **Search & Filter** - Find saved items by title or URL, filter by source
@@ -10,13 +11,15 @@ A unified personal library for links and content saved from across social media,
 - **Archive & Organize** - Keep your inbox clean
 
 ## Tech Stack
-- **Web:** Next.js 15, React, TypeScript
-- **Mobile:** React Native, Expo, TypeScript
+
+- **Web:** Next.js 16 (App Router), React 19, TypeScript
+- **Mobile:** React Native, Expo SDK 54, Expo Router, TypeScript
 - **Backend:** ASP.NET Core Web API (.NET 10), Entity Framework Core, FluentValidation
 - **Database:** PostgreSQL
 - **Monorepo:** npm workspaces
 
 ## Project Structure
+
 ```
 catchup/
 ├── apps/
@@ -34,6 +37,7 @@ catchup/
 ## Getting Started
 
 ### Prerequisites
+
 - Node.js 20+
 - .NET 10 SDK
 - PostgreSQL 16+ (or use the bundled dev cluster script)
@@ -41,13 +45,16 @@ catchup/
 - Xcode (for iOS on a Mac) or EAS Build (cloud iOS builds, no Mac required)
 
 ### 1. Install dependencies
+
 ```bash
 npm install
 ```
 
 ### 2. Start a local database
+
 The repo ships a script that creates a user-owned PostgreSQL cluster on port `5433`
 (no root access or system password needed):
+
 ```bash
 npm run db:start     # initialise + start, creates `catchup` and `catchup_test`
 npm run db:status
@@ -59,25 +66,31 @@ If you prefer your own PostgreSQL, set `ConnectionStrings__DefaultConnection`
 (or edit `apps/api/appsettings.Development.json`) to point at it.
 
 ### 3. Run the API
+
 ```bash
 npm run api:dev      # http://localhost:5099, Swagger at /swagger
 ```
+
 Apply migrations if you point at a fresh database:
+
 ```bash
 cd apps/api
 dotnet ef database update      # requires: dotnet tool install --global dotnet-ef
 ```
 
 ### 4. Verify the API
+
 ```bash
 npm run api:test     # 82 unit + integration tests (uses `catchup_test` DB)
 npm run api:smoke    # end-to-end HTTP checks against a running API
 ```
 
 ### 5. Run the web app
+
 ```bash
 npm run web:dev      # http://localhost:3000 (expects the API on :5099)
 ```
+
 The web app talks to the API **server-side only**: the access token lives in an
 HttpOnly cookie, so no token is exposed to browser JavaScript. Set `API_BASE_URL`
 if the API is not on `http://localhost:5099`.
@@ -86,27 +99,66 @@ if the API is not on `http://localhost:5099`.
 npm run web:build && npm run web:start
 ```
 
+### 6. Run the mobile app
+
+The app uses `expo-share-intent`, which adds a native iOS Share Extension and an
+Android `ACTION_SEND` filter. **Expo Go cannot run it** — you need a development
+build:
+
+```bash
+npm run mobile:prebuild            # generates android/ and ios/ (already gitignored)
+npm run mobile:android             # build + install on a connected device/emulator
+npm run mobile:start               # Metro, for an already-installed dev build
+```
+
+Set the API address before starting Metro, because the device cannot reach your
+laptop's `localhost`:
+
+```bash
+# Android emulator
+EXPO_PUBLIC_API_BASE_URL=http://10.0.2.2:5099 npm run mobile:start
+# Physical device (same Wi-Fi)
+EXPO_PUBLIC_API_BASE_URL=http://<your-LAN-IP>:5099 npm run mobile:start
+```
+
+The Android emulator must be able to reach the API; bind the API to `0.0.0.0`
+or use `adb reverse tcp:5099 tcp:5099` with `http://localhost:5099`.
+
+iOS builds require an Apple Developer team for the app **and** the Share
+Extension. Without a Mac, use EAS Build; `DEVELOPMENT_TEAM` still has to be set
+for signing.
+
 ### Configuration
+
 Copy `.env.example` to `.env` and adjust. Key values:
+
 - `ConnectionStrings__DefaultConnection` - PostgreSQL connection
 - `Jwt__Key` - signing key (>= 32 chars; never use the dev value in production)
 - `Cors__AllowedOrigins__*` - browser origins allowed to call the API
+- `API_BASE_URL` - server-side API URL for the web app
+- `EXPO_PUBLIC_API_BASE_URL` - API URL reachable from the phone/emulator
 
 ## Scripts
-| Command | What it does |
-| --- | --- |
-| `npm run db:start` | Start the local PostgreSQL cluster on 5433 |
-| `npm run api:dev` | Run the API on http://localhost:5099 |
-| `npm run api:test` | Run the .NET test suite |
-| `npm run api:smoke` | Run HTTP smoke tests against a running API |
-| `npm run web:dev` | Run the Next.js web app on http://localhost:3000 |
-| `npm run web:build` | Production build of the web app |
-| `npm run contracts:build` | Build the shared TypeScript contracts |
-| `npm run lint` | Lint the workspace |
-| `npm run format` | Format with Prettier |
+
+| Command                   | What it does                                     |
+| ------------------------- | ------------------------------------------------ |
+| `npm run db:start`        | Start the local PostgreSQL cluster on 5433       |
+| `npm run api:dev`         | Run the API on http://localhost:5099             |
+| `npm run api:test`        | Run the .NET test suite                          |
+| `npm run api:smoke`       | Run HTTP smoke tests against a running API       |
+| `npm run web:dev`         | Run the Next.js web app on http://localhost:3000 |
+| `npm run web:build`       | Production build of the web app                  |
+| `npm run mobile:prebuild` | Generate native Android/iOS projects             |
+| `npm run mobile:android`  | Build and install the Android dev build          |
+| `npm run mobile:start`    | Start Metro for the mobile dev build             |
+| `npm run contracts:build` | Build the shared TypeScript contracts            |
+| `npm run lint`            | Lint the workspace                               |
+| `npm run format`          | Format with Prettier                             |
 
 ## Documentation
+
 See the [docs](./docs/) folder for detailed documentation:
+
 - [Product Requirements](./docs/product-requirements.md)
 - [Architecture](./docs/architecture.md)
 - [API Contracts](./docs/api-contracts.md)
@@ -116,4 +168,5 @@ See the [docs](./docs/) folder for detailed documentation:
 - [Testing Strategy](./docs/testing-strategy.md)
 
 ## License
+
 MIT

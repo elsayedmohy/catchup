@@ -23,6 +23,10 @@
     "web:start": "npm run start --workspace @catchup/web",
     "web:lint": "npm run lint --workspace @catchup/web",
     "web:typecheck": "npm run typecheck --workspace @catchup/web",
+    "mobile:start": "npm run start --workspace @catchup/mobile",
+    "mobile:android": "npm run android --workspace @catchup/mobile",
+    "mobile:prebuild": "npm run prebuild --workspace @catchup/mobile",
+    "mobile:typecheck": "npm run typecheck --workspace @catchup/mobile",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
